@@ -2,39 +2,45 @@
   <body>
     <div style="max-width: 1000px; margin: 24px auto; font-family: Arial, sans-serif;">
       <h2 style="margin: 0 0 12px;">OpenRouter Model Explorer</h2>
-
       <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <!-- モデル選択部分 -->
         <div style="flex: 1 1 360px; min-width: 320px;">
           <div style="font-weight:700; margin-bottom:6px;">Model</div>
-
           <input
             id="modelSearch"
             type="text"
             placeholder="Search models (e.g. gpt, gemini, llama, qwen)..."
             style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; outline:none; margin-bottom:10px;"
           />
-
           <div style="border:1px solid #ddd; border-radius:10px; overflow:hidden;">
             <select id="modelSelect" size="10" style="width:100%; padding:10px; border:none; outline:none;"></select>
           </div>
-
           <div style="display:flex; gap:10px; margin-top:10px;">
             <button id="topPicks" style="padding:10px 12px;">Top picks</button>
             <button id="allModels" style="padding:10px 12px;">All</button>
           </div>
-
           <div id="modelCount" style="margin-top:8px; color:#666; font-size:13px;"></div>
         </div>
-
+        <!-- プロンプトと設定部分 -->
         <div style="flex: 1 1 520px; min-width: 320px;">
-          <div style="font-weight:700; margin-bottom:6px;">Prompt</div>
-
-          <textarea
-            id="prompt"
-            rows="7"
-            style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; outline:none; resize:vertical;"
-          >Write a short story about a robot that discovers emotions</textarea>
-
+          <!-- 性格設定追加 -->
+          <div style="margin-top:12px;">
+            <div style="font-weight:700; margin-bottom:6px;">性格設定</div>
+            <textarea
+              id="personality"
+              rows="3"
+              placeholder="キャラクターの性格や口調を設定..."
+              style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; outline:none; resize:vertical;"
+            ></textarea>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="font-weight:700; margin-bottom:6px;">Prompt</div>
+            <textarea
+              id="prompt"
+              rows="7"
+              style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; outline:none; resize:vertical;"
+            >Write a short story about a robot that discovers emotions</textarea>
+          </div>
           <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
             <button
               id="generate"
@@ -44,7 +50,6 @@
             </button>
             <div id="loading" style="display:none; color:#666;">Generating...</div>
           </div>
-
           <div style="margin-top:16px; border:1px solid #ddd; border-radius:12px; padding:14px; background:#fafafa;">
             <div style="font-weight:700; margin-bottom:8px;">Response</div>
             <div id="response" style="white-space:pre-wrap; min-height:120px;"></div>
@@ -52,7 +57,6 @@
         </div>
       </div>
     </div>
-
     <script src="https://js.puter.com/v2/"></script>
     <script>
       const MODELS = [
@@ -88,12 +92,10 @@
         "nousresearch/hermes-3-llama-3.1-405b","nousresearch/hermes-3-llama-3.1-405b:free","nousresearch/hermes-3-llama-3.1-70b","nousresearch/hermes-4-405b","nousresearch/hermes-4-70b",
         "nvidia/llama-3.3-nemotron-super-49b-v1.5","nvidia/nemotron-3-nano-30b-a3b","nvidia/nemotron-3-nano-30b-a3b:free","nvidia/nemotron-3-super-120b-a12b","nvidia/nemotron-3-super-120b-a12b:free","nvidia/nemotron-nano-9b-v2:free",
         "openai/gpt-3.5-turbo","openai/gpt-3.5-turbo-0613","openai/gpt-3.5-turbo-16k","openai/gpt-3.5-turbo-instruct",
-        "openai/gpt-4","openai/gpt-4-turbo","openai/gpt-4-turbo-preview",
-        "openai/gpt-4o-2024-05-13","openai/gpt-4o-2024-08-06","openai/gpt-4o-2024-11-20","openai/gpt-4o-mini-2024-07-18","openai/gpt-4o-mini-search-preview","openai/gpt-4o-search-preview",
+        "openai/gpt-4","openai/gpt-4-turbo","openai/gpt-4o-2024-05-13","openai/gpt-4o-2024-08-06","openai/gpt-4o-2024-11-20","openai/gpt-4o-mini-2024-07-18","openai/gpt-4o-mini-search-preview","openai/gpt-4o-search-preview",
         "openai/gpt-5-codex","openai/gpt-5-image","openai/gpt-5-image-mini","openai/gpt-5-pro","openai/gpt-5.1-codex-max","openai/gpt-5.3-chat","openai/gpt-5.4-mini","openai/gpt-5.4-nano","openai/gpt-5.4-pro",
         "openai/gpt-audio","openai/gpt-audio-mini",
         "openai/gpt-oss-120b","openai/gpt-oss-120b:free","openai/gpt-oss-20b","openai/gpt-oss-20b:free","openai/gpt-oss-safeguard-20b",
-        "openai/o3-deep-research","openai/o3-mini-high","openai/o4-mini-deep-research","openai/o4-mini-high",
         "openrouter/bodybuilder","openrouter/elephant-alpha","openrouter/free",
         "perplexity/sonar","perplexity/sonar-deep-research","perplexity/sonar-pro","perplexity/sonar-pro-search","perplexity/sonar-reasoning-pro",
         "qwen/qwen2-5-72b-instruct","qwen/qwen2-5-7b-instruct","qwen/qwen-2.5-coder-32b-instruct","qwen/qwen-max","qwen/qwen-plus",
@@ -136,6 +138,7 @@
       const elLoading = document.getElementById("loading");
       const elResponse = document.getElementById("response");
       const elPrompt = document.getElementById("prompt");
+      const elPersonality = document.getElementById("personality");
 
       let baseList = MODELS.slice();
 
@@ -182,15 +185,19 @@
 
       async function generate() {
         const model = elSelect.value;
-        const prompt = elPrompt.value;
+        const promptText = elPrompt.value;
+        const personality = elPersonality.value.trim();
+
+        // 性格設定をプロンプトに付加
+        const fullPrompt = personality ? `${personality}\n\n${promptText}` : promptText;
 
         elResponse.textContent = "";
         elLoading.style.display = "inline";
 
         try {
-          const response = await puter.ai.chat(prompt, { model, stream: true });
+          const response = await puter.ai.chat(fullPrompt, { model, stream: true });
           for await (const part of response) {
-            if (part?.text) elResponse.textContent += part.text; // 返ってきた分は即表示
+            if (part?.text) elResponse.textContent += part.text;
           }
         } finally {
           elLoading.style.display = "none";
