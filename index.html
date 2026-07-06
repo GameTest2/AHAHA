@@ -379,15 +379,14 @@
     // 初期化時にすべてのモデルを読み込み
     renderModels();
     /* ==========================================================================
-       PART 4: API連携・思考抽出制御ロジック（思考可視化・ループ防止）
+       PART 4: API連携・リアルタイムストリーミング制御（完全リアルタイム版）
        ========================================================================== */
     
-    // 生成ボタンのメイン実行関数
+    // 生成ボタンのメインストリーミング実行関数
     async function executeGeneration() {
         const selectedModel = modelSelect.value;
         const originalPrompt = promptInput.value.trim();
 
-        // バリデーションチェック
         if (!originalPrompt || !selectedModel || modelSelect.options?.disabled) {
             alert('有効なモデルを選択し、プロンプトを入力してください。');
             return;
@@ -398,38 +397,52 @@
             return;
         }
 
-        // 💡 思考プロセス（CoT）を強制出力させつつ、「考えすぎ（ループ）」を抑止する的確なシステム指示
-        const finalPrompt = `${originalPrompt}\n\n[思考出力要求: 回答を生成する前に、あなたが頭の中で考えている推論、葛藤、論理展開のステップを、必ず <thinking> と </thinking> のタグで囲んで、すべて生のまま書き出してください。ただし、同じ思考やフレーズを無駄にループ（考えすぎ）させず、簡潔かつ深く思考をまとめて、最終回答へシームレスに繋げてください。]`;
+        // 💡 AIに思考タグを強制しつつ、無駄な考えすぎループを防止する的確なインジェクション
+        const finalPrompt = `${originalPrompt}\n\n[思考出力要求: 回答を生成する前に、あなたが考えている推論展開を必ず <thinking> と </thinking> のタグで囲んで出力してください。同じ思考のループ（考えすぎ）は厳禁とし、簡潔かつ深く思考をまとめた後、最終回答へシームレスに繋げてください。]`;
 
-        // 両ボックスの初期化とローディングの表示
-        responseDiv.innerHTML = '';
-        thinkingOutput.innerHTML = '';
+        // UI表示の初期化
+        responseDiv.textContent = '';
+        thinkingOutput.textContent = '';
         loadingDiv.style.display = 'block';
         generateBtn.disabled = true;
 
+        // ストリーミングデータをリアルタイムに結合・パースするためのバッファ変数
+        let accumulatedText = "";
+
         try {
-            // Puter.js v2 SDKテキスト生成
+            // 💡 stream: true を指定してリアルタイムストリーミングを有効化
             const response = await puter.ai.chat(finalPrompt, { 
                 model: selectedModel,
-                max_tokens: 8192 // 最大枠を確保して推論＋回答をすべて収める
+                max_tokens: 8192,
+                stream: true 
             });
             
-            // 取得した生のレスポンスデータを抽出し、PART 5のパース処理へ渡す
-            if (typeof handleParsingProcess === 'function') {
-                handleParsingProcess(response);
-            } else {
-                responseDiv.textContent = response;
+            // ローディング表記を「受信中」に切り替え
+            loadingDiv.textContent = "AIが思考・回答をリアルタイムに出力しています...";
+
+            // 💡 非同期イテレータを使用して、APIから降ってきた文字の断片（chunk）を即座に処理
+            for await (const part of response) {
+                if (part?.text) {
+                    accumulatedText += part.text;
+
+                    // 💡 文字が1文字降ってくるたびに、リアルタイムで仕分けパース関数（PART 5）を叩く
+                    if (typeof handleLiveParsing === 'function') {
+                        handleLiveParsing(accumulatedText);
+                    } else {
+                        responseDiv.textContent = accumulatedText;
+                    }
+                }
             }
+
         } catch (error) {
-            // エラーハンドラーへ引き渡す
             if (typeof handleResponseError === 'function') {
                 handleResponseError(error);
             } else {
                 responseDiv.innerHTML = `<span style="color: var(--danger);">エラー: ${error.message}</span>`;
             }
         } finally {
-            // ローディング状態を解除
             loadingDiv.style.display = 'none';
+            loadingDiv.textContent = "思考を展開中。推論プロセスと回答を抽出しています...";
             generateBtn.disabled = false;
         }
     }
@@ -441,111 +454,84 @@
             generateBtn.disabled = false;
             generateBtn.textContent = '思考を可視化して生成';
             generateBtn.addEventListener('click', executeGeneration);
-            console.log("Puter SDK initialized with Dynamic Thinking Parser!");
+            console.log("Puter Stream Engine successfully armed!");
         }
     }, 100);
     /* ==========================================================================
-       PART 5: レスポンスパース・エラーハンドリング ＆ HTML完了
+       PART 5: ライブストリーム・スプリットパース ＆ HTML完了
        ========================================================================== */
-    /**
-     * AIからの返答文を解析し、思考プロセスと最終回答に分離して画面に表示する関数
-     * @param {string} rawText - AIから返ってきた生のテキスト
-     */
-        /* ==========================================================================
-       PART 5: レスポンスパース・一文字出力タイピング ＆ HTML完了
-       ========================================================================== */
-    
-    // 文字送りアニメーション用のタイマーIDを管理する変数（連打時の重複防止）
-    let thinkingInterval = null;
-    let responseInterval = null;
 
     /**
-     * 指定された要素に、テキストを一文字ずつ滑らかに描画する関数
-     * @param {HTMLElement} element - 描画対象のDOM要素
-     * @param {string} text - 出力する全テキスト
-     * @param {number} speed - 1文字あたりの描画速度 (ミリ秒)
-     * @returns {Promise} 描画完了時にresolveされるPromise
+     * リアルタイムに蓄積される文字列をミリ秒単位でパースし、
+     * 思考中/回答中を自動判別して各画面に直接文字を流し込む関数
+     * @param {string} currentBuffer - 現在までに蓄積された全文字列
      */
-    function typeWriterEffect(element, text, speed = 10) {
-        return new Promise((resolve) => {
-            element.textContent = "";
-            let index = 0;
-            
-            // 非常に長い文章でも快適に追えるよう、超高速かつ等間隔で描画
-            const timer = setInterval(() => {
-                if (index < text.length) {
-                    element.textContent += text.charAt(index);
-                    index++;
-                    // 文字が増えるのに合わせて、自動で最下部へ追従スクロール
-                    element.scrollTop = element.scrollHeight;
-                } else {
-                    clearInterval(timer);
-                    resolve();
-                }
-            }, speed);
+    function handleLiveParsing(currentBuffer) {
+        // <thinking>タグが開かれているか、および閉じられているかを検出
+        const openTag = "<thinking>";
+        const closeTag = "</thinking>";
 
-            // インターバルIDを記録（次の生成時に強制停止できるようにするため）
-            if (element.id === 'thinking-output') thinkingInterval = timer;
-            if (element.id === 'response') responseInterval = timer;
-        });
-    }
-
-    /**
-     * AIからの返答文を解析し、思考プロセスと最終回答に分離して一文字ずつ出力する関数
-     * @param {string} rawText - AIから返ってきた生のテキスト
-     */
-    async function handleParsingProcess(rawText) {
-        // 前回のタイマーが動いていれば完全にクリア（競合バグ防止）
-        clearInterval(thinkingInterval);
-        clearInterval(responseInterval);
-
-        // <thinking>タグを検出するための正規表現
-        const thinkingRegex = /<thinking>([\s\S]*?)<\/thinking>/i;
-        const match = rawText.match(thinkingRegex);
+        const openIndex = currentBuffer.indexOf(openTag);
+        const closeIndex = currentBuffer.indexOf(closeTag);
 
         let thinkingText = "";
-        let finalText = rawText;
+        let finalText = "";
 
-        if (match) {
-            thinkingText = match[1].trim();
-            finalText = rawText.replace(thinkingRegex, "").trim();
+        if (openIndex !== -1) {
+            // <thinking> タグが存在する場合
+            if (closeIndex !== -1) {
+                // 1. 既に思考タグが閉じている場合：タグの中身を抽出し、それ以降を最終回答にする
+                thinkingText = currentBuffer.substring(openIndex + openTag.length, closeIndex).trim();
+                finalText = currentBuffer.substring(closeIndex + closeTag.length).trim();
+            } else {
+                // 2. まさに今思考タグの内部を生成中（思考中）の場合：開いたタグ以降の文字をすべて思考エリアへ
+                thinkingText = currentBuffer.substring(openIndex + openTag.length);
+                finalText = "（思考完了後に、こちらへ最終回答がリアルタイムで出力されます）";
+            }
         } else {
-            // タグがなくても、文章内に「think」などの思考セクションの塊があれば分離するフォールバック
-            const alternativeSplit = rawText.split(/\n\n(?=[#*])/);
-            if (alternativeSplit.length > 1 && alternativeSplit[0].toLowerCase().includes('think')) {
-                thinkingText = alternativeSplit[0].trim();
-                finalText = alternativeSplit.slice(1).join('\n\n').trim();
+            // 3. 思考タグがそもそも出力されなかった場合（直接回答が降ってきた場合）
+            // ディープシークR1などの推論モデルがタグ無しで生の推論を出してきた場合の簡易フォールバック
+            if (currentBuffer.toLowerCase().includes('think') && currentBuffer.split('\n\n').length > 1) {
+                const parts = currentBuffer.split(/\n\n(?=[#*])/);
+                thinkingText = parts[0];
+                finalText = parts.slice(1).join('\n\n');
             } else {
                 thinkingText = "（このモデルからは、明示的な思考プロセスタグが検出されませんでした）";
-                finalText = rawText;
+                finalText = currentBuffer;
             }
         }
 
-        // 1. まず左画面の「思考の軌跡」を一文字ずつ超高速描画（1文字あたり2ms）
-        await typeWriterEffect(thinkingOutput, thinkingText, 2);
+        // 各専用ボックスのDOMに直接テキストを流し込む（ストリーミング生出力）
+        thinkingOutput.textContent = thinkingText;
+        responseDiv.textContent = finalText;
 
-        // 2. 思考の出力が終わったら、右画面の「最終回答」を一文字ずつ心地よい速度で描画（1文字あたり8ms）
-        await typeWriterEffect(responseDiv, finalText, 8);
+        // 💡 文字が降ってくる動きに合わせて、それぞれの画面を最下部へ自動追従スクロール！
+        // これにより、ハッカーの端末のように画面が自動でせり上がる視覚効果が生まれます
+        thinkingOutput.scrollTop = thinkingOutput.scrollHeight;
+        responseDiv.scrollTop = responseDiv.scrollHeight;
     }
 
     /**
-     * エラー発生時のUI表示
+     * ストリーミング通信中またはAPIエラー発生時のUI表示
      * @param {Error} error - エラーオブジェクト
      */
     function handleResponseError(error) {
-        clearInterval(thinkingInterval);
-        clearInterval(responseInterval);
-        console.error("Puter AI API Error:", error);
+        console.error("Puter AI Streaming API Error:", error);
         
+        // エラーオブジェクトを文字列に展開してユーザーに分かりやすく表示
+        const errMessage = error && typeof error === 'object' 
+            ? (error.message || JSON.stringify(error)) 
+            : (error || '不明なストリーミングエラー、またはAPIキー/セッション切れです。');
+
         responseDiv.innerHTML = `
             <div style="color: var(--danger); font-weight: 600; display: flex; flex-direction: column; gap: 8px;">
-                <span>⚠️ 通信または生成エラーが発生しました</span>
-                <span style="font-size: 13px; font-weight: normal; line-height: 1.5; background: rgba(239, 68, 68, 0.08); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    ${error.message || '不明なエラーです。パラメータまたはモデル制限の可能性があります。'}
+                <span style="display: flex; align-items: center; gap: 6px;">⚠️ リアルタイム生成中にエラーが発生しました</span>
+                <span style="font-size: 13px; font-weight: normal; line-height: 1.5; background: rgba(239, 68, 68, 0.08); padding: 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); white-space: pre-wrap; font-family: monospace;">
+                    ${errMessage}
                 </span>
             </div>
         `;
-        thinkingOutput.textContent = "エラーのため思考プロセスを取得できませんでした。";
+        thinkingOutput.textContent = "エラーのため推論ストリームが遮断されました。";
     }
 </script>
 </body>
