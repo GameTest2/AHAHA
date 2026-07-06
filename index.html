@@ -451,8 +451,55 @@
      * AIからの返答文を解析し、思考プロセスと最終回答に分離して画面に表示する関数
      * @param {string} rawText - AIから返ってきた生のテキスト
      */
-    function handleParsingProcess(rawText) {
-        // <thinking>タグを検出するための正規表現（大文字小文字を区別せず、改行を跨ぐ）
+        /* ==========================================================================
+       PART 5: レスポンスパース・一文字出力タイピング ＆ HTML完了
+       ========================================================================== */
+    
+    // 文字送りアニメーション用のタイマーIDを管理する変数（連打時の重複防止）
+    let thinkingInterval = null;
+    let responseInterval = null;
+
+    /**
+     * 指定された要素に、テキストを一文字ずつ滑らかに描画する関数
+     * @param {HTMLElement} element - 描画対象のDOM要素
+     * @param {string} text - 出力する全テキスト
+     * @param {number} speed - 1文字あたりの描画速度 (ミリ秒)
+     * @returns {Promise} 描画完了時にresolveされるPromise
+     */
+    function typeWriterEffect(element, text, speed = 10) {
+        return new Promise((resolve) => {
+            element.textContent = "";
+            let index = 0;
+            
+            // 非常に長い文章でも快適に追えるよう、超高速かつ等間隔で描画
+            const timer = setInterval(() => {
+                if (index < text.length) {
+                    element.textContent += text.charAt(index);
+                    index++;
+                    // 文字が増えるのに合わせて、自動で最下部へ追従スクロール
+                    element.scrollTop = element.scrollHeight;
+                } else {
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, speed);
+
+            // インターバルIDを記録（次の生成時に強制停止できるようにするため）
+            if (element.id === 'thinking-output') thinkingInterval = timer;
+            if (element.id === 'response') responseInterval = timer;
+        });
+    }
+
+    /**
+     * AIからの返答文を解析し、思考プロセスと最終回答に分離して一文字ずつ出力する関数
+     * @param {string} rawText - AIから返ってきた生のテキスト
+     */
+    async function handleParsingProcess(rawText) {
+        // 前回のタイマーが動いていれば完全にクリア（競合バグ防止）
+        clearInterval(thinkingInterval);
+        clearInterval(responseInterval);
+
+        // <thinking>タグを検出するための正規表現
         const thinkingRegex = /<thinking>([\s\S]*?)<\/thinking>/i;
         const match = rawText.match(thinkingRegex);
 
@@ -460,13 +507,10 @@
         let finalText = rawText;
 
         if (match) {
-            // タグの内部テキストを抽出
             thinkingText = match[1].trim();
-            // 生テキストから思考タグブロック全体を削除して最終回答とする
             finalText = rawText.replace(thinkingRegex, "").trim();
         } else {
-            // 万が一タグが出力されなかった場合、特定のマークダウンや箇条書きなど、推論っぽい部分を簡易フォールバック
-            // 推論モデル（DeepSeek R1等）がタグなしで生の思考を先行出力した場合のハンドリング
+            // タグがなくても、文章内に「think」などの思考セクションの塊があれば分離するフォールバック
             const alternativeSplit = rawText.split(/\n\n(?=[#*])/);
             if (alternativeSplit.length > 1 && alternativeSplit[0].toLowerCase().includes('think')) {
                 thinkingText = alternativeSplit[0].trim();
@@ -477,13 +521,11 @@
             }
         }
 
-        // それぞれの専用ボックスに安全に出力
-        thinkingOutput.textContent = thinkingText;
-        responseDiv.textContent = finalText;
+        // 1. まず左画面の「思考の軌跡」を一文字ずつ超高速描画（1文字あたり2ms）
+        await typeWriterEffect(thinkingOutput, thinkingText, 2);
 
-        // スクロール位置を一番上に戻して読みやすく調整
-        thinkingOutput.scrollTop = 0;
-        responseDiv.scrollTop = 0;
+        // 2. 思考の出力が終わったら、右画面の「最終回答」を一文字ずつ心地よい速度で描画（1文字あたり8ms）
+        await typeWriterEffect(responseDiv, finalText, 8);
     }
 
     /**
@@ -491,6 +533,8 @@
      * @param {Error} error - エラーオブジェクト
      */
     function handleResponseError(error) {
+        clearInterval(thinkingInterval);
+        clearInterval(responseInterval);
         console.error("Puter AI API Error:", error);
         
         responseDiv.innerHTML = `
