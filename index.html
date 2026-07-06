@@ -420,9 +420,7 @@
                 model: selectedModel,
                 // 💡 明示的に巨大な出力をリクエストしてPuter内部のデフォルト制限キャップを上書き
                 max_tokens: 8192,
-                // 表現の多様性を広げて文脈のループや途中停止を防ぐ
-                temperature: 0.8
-            });
+                // 表現の多様性を広げて文脈のループや途中停止を防ぐ            });
             
             // 正常に取得できたレスポンスをPART 5へ引き渡す
             if (typeof handleResponseSuccess === 'function') {
