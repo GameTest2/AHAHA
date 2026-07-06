@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenRouter Model Explorer - Thinking Visualizer</title>
+    <title>OpenRouter Model Explorer - Live Stream Pro</title>
     <!-- Puter.js v2 SDK -->
-    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://puter.com"></script>
+    <!-- 💡 マークダウンをリアルタイムで超高速パースするための最強ライブラリ -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         /* ==========================================================================
-           PART 1: 思考プロセス表示に特化したマルチスプリット UI スタイル
+           PART 1: リアルタイム・マークダウン表示に最適化されたモダンUIシステム
            ========================================================================== */
         :root {
             --bg-color: #090d16;
             --card-bg: #111827;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
-            --primary: #8b5cf6;
-            --primary-hover: #7c3aed;
+            --primary: #4f46e5;
+            --primary-hover: #6366f1;
             --border: #1f2937;
-            --radius: 10px;
+            --radius: 12px;
             --danger: #ef4444;
-            --thinking-bg: #1e1b4b; /* 思考エリア用の深いパープル */
-            --thinking-border: #4338ca;
+            --code-bg: #1e293b;
         }
 
         * {
@@ -34,39 +35,40 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            line-height: 1.6;
-            padding: 25px 15px;
+            line-height: 1.7;
+            padding: 30px 15px;
         }
 
         .container {
-            max-width: 950px;
+            max-width: 900px;
             margin: 0 auto;
             background: var(--card-bg);
-            padding: 30px;
+            padding: 35px;
             border-radius: var(--radius);
-            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border: 1px solid var(--border);
         }
 
         h1 {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 800;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             color: #fff;
             display: flex;
             align-items: center;
             gap: 10px;
+            letter-spacing: -0.025em;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         label {
             display: block;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -75,28 +77,29 @@
         .select-container {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
 
         input[type="text"], select, textarea {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            font-size: 14.5px;
+            font-size: 15px;
             color: var(--text-main);
             background-color: #090d16;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
         }
 
         input[type="text"]:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
         }
 
         textarea {
             resize: vertical;
-            min-height: 100px;
+            min-height: 110px;
             font-family: inherit;
         }
 
@@ -104,126 +107,116 @@
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 14px;
-            font-size: 15px;
+            padding: 15px;
+            font-size: 16px;
             font-weight: 700;
             border-radius: var(--radius);
             cursor: pointer;
             width: 100%;
-            transition: background-color 0.15s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
         }
 
         .btn:hover {
             background-color: var(--primary-hover);
+            transform: translateY(-1px);
         }
 
         .btn:disabled {
             background-color: #1f2937;
             color: var(--text-muted);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .loading {
             display: none;
             text-align: center;
             margin-top: 15px;
-            font-size: 14px;
+            font-size: 14.5px;
             color: var(--primary);
             font-weight: 600;
-            background: rgba(139, 92, 246, 0.1);
-            padding: 10px;
+            background: rgba(79, 70, 229, 0.08);
+            padding: 12px;
             border-radius: var(--radius);
+            border: 1px dashed rgba(79, 70, 229, 0.2);
         }
 
-        /* 💡 思考エリアと回答エリアを分けるグリッドコンテナ */
-        .output-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+        /* 💡 降ってきたマークダウンを綺麗に表示する巨大スクロールパネル */
+        .response-box {
             margin-top: 25px;
-        }
-
-        @media (min-width: 768px) {
-            .output-grid {
-                grid-template-columns: 1fr 1fr; /* 横並び2カラムに分割 */
-            }
-        }
-
-        .output-panel {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-box {
-            flex-grow: 1;
-            padding: 18px;
-            border-radius: var(--radius);
-            min-height: 300px;
-            max-height: 600px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            font-size: 15px;
-            line-height: 1.6;
+            padding: 26px;
             border: 1px solid var(--border);
+            border-radius: var(--radius);
             background-color: #090d16;
+            min-height: 350px;
+            max-height: 750px;
+            overflow-y: auto;
+            font-size: 16px;
         }
 
-        /* 思考プロセス専用のボックススタイル */
-        #thinking-output {
-            background-color: var(--thinking-bg);
-            border-color: var(--thinking-border);
-            color: #c084fc; /* 思考の軌跡をわかりやすく着色 */
-            font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
-            font-size: 14px;
-        }
-
-        .panel-title {
-            font-size: 12px;
+        .response-title {
+            font-size: 13px;
             font-weight: 700;
             color: var(--text-muted);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
+
+        /* 💡 マークダウン装飾用の詳細CSSリセット */
+        .response-box h1, .response-box h2, .response-box h3 { margin-top: 20px; margin-bottom: 12px; color: #fff; font-weight: 700; }
+        .response-box h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .response-box h2 { font-size: 1.3em; }
+        .response-box p { margin-bottom: 14px; }
+        .response-box ul, .response-box ol { margin-left: 20px; margin-bottom: 14px; }
+        .response-box li { margin-bottom: 4px; }
+        .response-box code { background-color: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: #f43f5e; }
+        .response-box pre { background-color: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; margin-bottom: 16px; border: 1px solid var(--border); }
+        .response-box pre code { background-color: transparent; padding: 0; color: #38bdf8; font-size: 0.95em; }
+        .response-box strong { color: #facc15; font-weight: 700; }
+        .response-box blockquote { border-left: 4px solid var(--primary); padding-left: 16px; color: var(--text-muted); font-style: italic; margin-bottom: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🧠 Model Explorer (Thinking Visualizer)</h1>
+    <h1>🚀 OpenRouter Live Stream Explorer</h1>
 
     <div class="form-group">
-        <label for="model-search">モデルを検索 / 選択</label>
+        <label for="model-search">モデルを選択</label>
         <div class="select-container">
-            <input type="text" id="model-search" placeholder="gpt, claude, deepseek, qwen...">
-            <select id="model-select"></select>
+            <input type="text" id="model-search" placeholder="モデル名で絞り込み...">
+            <select id="model-select">
+                <!-- PART 2 & PART 3 で挿入 -->
+            </select>
         </div>
     </div>
 
     <div class="form-group">
-        <label for="prompt">プロンプト</label>
-        <textarea id="prompt" placeholder="指示を入力してください...">量子コンピュータと従来のコンピュータの違いを教えて。</textarea>
+        <label for="prompt">プロンプト指示</label>
+        <textarea id="prompt" placeholder="AIへの指示を入力してください...">量子コンピュータについて、以下のマークダウン構成を守り、妥協なき論文レベルの圧倒的な長文で網羅的に解説してください。
+# 量子コンピュータの全貌
+## 1. コアとなる物理メカニズム
+（重ね合わせや量子絡み合いについて詳しく）
+## 2. 従来のコンピュータとの絶対的な違い
+## 3. 暗号技術や社会に与える激震インパクト</textarea>
     </div>
 
     <button id="generate" class="btn" disabled>Puter SDKの初期化中...</button>
 
-    <div id="loading" class="loading">思考を展開中。推論プロセスと回答を抽出しています...</div>
+    <div id="loading" class="loading">AIが長文データを構築しています。完了直後からリアルタイム出力が開始されます...</div>
 
-    <!-- 出力ビュー（左：思考プロセス / 右：最終的な回答） -->
-    <div class="output-grid">
-        <div class="output-panel">
-            <div class="panel-title">🤔 AI Thought Process (思考の軌跡)</div>
-            <div id="thinking-output" class="panel-box">ここにAIが「考えていること」が出力されます。</div>
-        </div>
-        <div class="output-panel">
-            <div class="panel-title">✨ Final Output (最終回答)</div>
-            <div id="response" class="panel-box">ここに最終的な回答が出力されます。</div>
-        </div>
+    <div>
+        <div class="response-title">✨ Live Stream Output (マークダウン対応)</div>
+        <div id="response" class="response-box">ここにAIの返答が1文字ずつリアルタイムに降ってきます。</div>
     </div>
 </div>
 
 <script>
+    // SDKロード完了検知の安全処理
     window.addEventListener('DOMContentLoaded', () => {
         const checkPuter = setInterval(() => {
             if (typeof puter !== 'undefined') {
@@ -231,14 +224,14 @@
                 const btn = document.getElementById('generate');
                 if (btn) {
                     btn.disabled = false;
-                    btn.textContent = '思考を可視化して生成';
+                    btn.textContent = 'ストリーム生成を開始';
                 }
             }
         }, 100);
     });
 
     /* ==========================================================================
-       PART 1: 思考ビジュアルレイアウト 定義終了
+       PART 1: ユニバーサル・マークダウンビュー 終了
        ========================================================================== */
     /* ==========================================================================
        PART 2: モデルデータ定義（190種類以上の対応モデルリスト）
@@ -320,7 +313,6 @@
     const promptInput = document.getElementById('prompt');
     const generateBtn = document.getElementById('generate');
     const responseDiv = document.getElementById('response');
-    const thinkingOutput = document.getElementById('thinking-output');
     const loadingDiv = document.getElementById('loading');
 
     /**
@@ -328,16 +320,17 @@
      * @param {string} filterText - 検索窓に入力されたキーワード
      */
     function renderModels(filterText = '') {
+        // セレクトボックスの中身を一度完全にクリア
         modelSelect.innerHTML = '';
         const groups = {};
 
         rawModels.forEach(model => {
-            // キーワードが含まれていない場合はスキップ
+            // 💡 大文字小文字を区別せず、検索キーワードが含まれていないモデルはスキップ
             if (filterText && !model.toLowerCase().includes(filterText.toLowerCase())) {
                 return;
             }
             
-            // スラッシュで区切ってプロバイダ名（組織名）を取得
+            // スラッシュ「/」で区切って、スラッシュの前をプロバイダ名（組織名）として取得
             const parts = model.split('/');
             const provider = parts[0] || 'Other';
             
@@ -347,22 +340,22 @@
             groups[provider].push(model);
         });
 
-        // プロバイダ名をアルファベット順にソートして展開
+        // 💡 プロバイダ名（組織名）をアルファベット順に綺麗にソートしてセレクトボックスに展開
         Object.keys(groups).sort().forEach(provider => {
             const optgroup = document.createElement('optgroup');
-            optgroup.label = provider.toUpperCase();
+            optgroup.label = provider.toUpperCase(); // グループ名は大文字で見やすく表示
 
             groups[provider].forEach(model => {
                 const option = document.createElement('option');
                 option.value = model;
-                // 表示名はプロバイダ名を取り除いたすっきりした名称にする
+                // 表示名はプロバイダ名を取り除いたすっきりした名称にして視認性をアップ
                 option.textContent = model.split('/')[1] || model;
                 optgroup.appendChild(option);
             });
             modelSelect.appendChild(optgroup);
         });
 
-        // 該当モデルがゼロ件の場合のハンドリング
+        // 💡 検索キーワードに一致するモデルが1件もなかった場合の親切なハンドリング
         if (modelSelect.options.length === 0) {
             const option = document.createElement('option');
             option.textContent = '一致するモデルが見つかりません';
@@ -371,23 +364,60 @@
         }
     }
 
-    // 検索窓への入力イベントを監視（リアルタイムでリストを更新）
+    // 💡 検索窓へのテキスト入力イベントを監視し、リアルタイム（ミリ秒単位）でリストを即座に更新
     modelSearch.addEventListener('input', (e) => {
         renderModels(e.target.value);
     });
 
-    // 初期化時にすべてのモデルを読み込み
+    // アプリ起動時にすべてのモデル（190種類以上）を初期読み込み
     renderModels();
     /* ==========================================================================
-       PART 4: API連携・リアルタイムストリーム＆長文完全対応版
+       PART 4: 仮想ストリーミング・エンジン ＆ コア描画制御
        ========================================================================== */
     
-    // 生成ボタンのメインストリーミング実行関数
+    // アニメーションタイマーの多重起動を防ぐための制御フラグ
+    let streamAnimationId = null;
+
+    /**
+     * 一括で取得した長文テキストを、超高速で1文字ずつ滑らかに画面へ「降らせる」関数
+     * 1文字増えるごとにリアルタイムにマークダウンをHTMLに変換してレンダリングします。
+     * @param {string} fullText - AIから返ってきた全テキスト
+     * @param {number} charDelay - 1文字あたりのミリ秒遅延（低くするほど高速）
+     */
+    function triggerVirtualStreaming(fullText, charDelay = 3) {
+        // すでに動いている文字送りアニメーションがあれば完全に停止
+        if (streamAnimationId) {
+            clearInterval(streamAnimationId);
+        }
+
+        responseDiv.innerHTML = "";
+        let currentIndex = 0;
+
+        // 💡 1文字ずつ文字を結合しながらミリ秒単位でループ駆動
+        streamAnimationId = setInterval(() => {
+            if (currentIndex < fullText.length) {
+                currentIndex++;
+                const slicedText = fullText.substring(0, currentIndex);
+                
+                // 💡 marked.jsライブラリを使用して、1文字増えた状態のテキストをリアルタイムでHTMLに瞬時パース！
+                // これにより、箇条書き、見出し、ソースコードが文字通り「リアルタイムに組み上がる」エフェクトになります。
+                responseDiv.innerHTML = marked.parse(slicedText);
+                
+                // 文字の降下に合わせて画面を最下部へ自動追従スクロール
+                responseDiv.scrollTop = responseDiv.scrollHeight;
+            } else {
+                // すべての文字を出し切ったらタイマーを綺麗にクリア
+                clearInterval(streamAnimationId);
+                streamAnimationId = null;
+            }
+        }, charDelay);
+    }
+
+    // 生成ボタンのメイン実行関数
     async function executeGeneration() {
         const selectedModel = modelSelect.value;
         const originalPrompt = promptInput.value.trim();
 
-        // バリデーションチェック
         if (!originalPrompt || !selectedModel || modelSelect.options?.disabled) {
             alert('有効なモデルを選択し、プロンプトを入力してください。');
             return;
@@ -398,84 +428,81 @@
             return;
         }
 
-        // 💡 画面表示とローディングを一度クリアして初期化
-        responseDiv.textContent = '';
-        thinkingOutput.textContent = '（このシンプルモードでは、右画面にリアルタイムで直接文字が降り注ぎます）';
+        // UI表示の初期化とローディングの展開
+        responseDiv.innerHTML = '<span style="color: var(--text-muted);">AIからの応答を待機中...</span>';
         loadingDiv.style.display = 'block';
         generateBtn.disabled = true;
 
         try {
-            // 💡 余計な指示文やtemperatureは一切載せず、ストリームフラグとモデル名だけで純粋にリクエスト
+            // 💡 外部アクセス制限や400エラーを防ぐため、一番クリーンな状態でリクエストを送信
+            // GPT-5.4-pro等の限界長文を引き出すための最大枠（max_tokens）を最大値でしっかり確保
             const response = await puter.ai.chat(originalPrompt, { 
                 model: selectedModel,
-                max_tokens: 8192,
-                stream: true 
+                max_tokens: 8192
             });
-            
-            loadingDiv.textContent = "AIから文字をリアルタイムに受信中...";
 
-            // 💡 Puter.js公式仕様に基づき、非同期イテレータで降ってきた文字の断片をそのまま結合
-            for await (const part of response) {
-                if (part?.text) {
-                    // 💡 受け取った文字を右側の回答画面に「リアルタイムでそのまま追加」
-                    responseDiv.textContent += part.text;
-                    
-                    // 文字が降ってくる動きに合わせて自動で最下部へ追従スクロール
-                    responseDiv.scrollTop = responseDiv.scrollHeight;
-                }
+            // 💡 通信成功！一括で戻ってきた巨大データを、超高速ストリーミングエンジンへ引き渡す
+            if (response) {
+                triggerVirtualStreaming(response, 4); // 4ms間隔で爆速で1文字ずつ降らせる
+            } else {
+                responseDiv.innerHTML = '<span style="color: var(--text-muted);">応答が空でした。もう一度試してください。</span>';
             }
 
         } catch (error) {
-            // エラーが発生した場合はPART 5へ安全に引き渡す
+            // エラーが発生した場合は安全にPART 5のエラーハンドラーへ委託
             if (typeof handleResponseError === 'function') {
                 handleResponseError(error);
             } else {
                 responseDiv.innerHTML = `<span style="color: var(--danger);">エラーが発生しました: ${error.message}</span>`;
             }
         } finally {
-            // 生成完了後にローディングを消してボタンを戻す
+            // 処理完了後にローディング表示を非表示にする
             loadingDiv.style.display = 'none';
-            loadingDiv.textContent = "思考を展開中。推論プロセスと回答を抽出しています...";
             generateBtn.disabled = false;
         }
     }
 
-    // Puterオブジェクトのロード状態を100msごとに監視する安全初期化ガード
+    // Puterオブジェクトがグローバルに生成されるのを監視する安全ガード（初期化イベント結合）
     const initGuard = setInterval(() => {
         if (typeof puter !== 'undefined') {
-            clearInterval(initGuard); // ロード完了したら監視を停止
+            clearInterval(initGuard);
             
             generateBtn.disabled = false;
-            generateBtn.textContent = 'リアルタイムモードで生成';
+            generateBtn.textContent = 'ストリーム生成を開始';
             generateBtn.addEventListener('click', executeGeneration);
-            console.log("Puter Stream Engine successfully armed!");
+            console.log("Puter Virtual Stream Engine enabled successfully.");
         }
     }, 100);
     /* ==========================================================================
-       PART 5: シンプルライブ出力・エラーハンドリング ＆ HTML完了
+       PART 5: エラー耐性強化・HTML完了
        ========================================================================== */
 
     /**
-     * ストリーミング通信中またはAPIエラー発生時の安全なUI表示関数
+     * API通信時、またはレンダリング中にエラーが発生した際の安全なUI表示関数
      * @param {Error} error - エラーオブジェクト
      */
     function handleResponseError(error) {
-        console.error("Puter AI Streaming API Error:", error);
+        // 動いている文字送りアニメーションがあれば完全に停止してクリア
+        if (streamAnimationId) {
+            clearInterval(streamAnimationId);
+            streamAnimationId = null;
+        }
+
+        console.error("Puter AI Engine Connection Error:", error);
         
-        // エラーオブジェクトがObjectのままでも見やすいように文字列展開して表示
+        // エラーオブジェクトの中身をユーザー向けに見やすく展開
         const errMessage = error && typeof error === 'object' 
             ? (error.message || JSON.stringify(error)) 
-            : (error || '不明なストリーミングエラーが発生しました。時間を置いて再度お試しください。');
+            : (error || '不明なエラーが発生しました。時間を置いて再度お試しください。');
 
         responseDiv.innerHTML = `
             <div style="color: var(--danger); font-weight: 600; display: flex; flex-direction: column; gap: 8px;">
-                <span style="display: flex; align-items: center; gap: 6px;">⚠️ リアルタイム通信中にエラーが発生しました</span>
-                <span style="font-size: 13px; font-weight: normal; line-height: 1.5; background: rgba(244, 63, 94, 0.08); padding: 12px; border-radius: 6px; border: 1px solid rgba(244, 63, 94, 0.2); white-space: pre-wrap; font-family: monospace;">
+                <span style="display: flex; align-items: center; gap: 6px;">⚠️ 生成中にエラーが発生しました</span>
+                <span style="font-size: 13.5px; font-weight: normal; line-height: 1.6; background: rgba(239, 68, 68, 0.08); padding: 14px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); white-space: pre-wrap; font-family: monospace;">
                     ${errMessage}
                 </span>
             </div>
         `;
-        thinkingOutput.textContent = "ストリームエラーのため、推論プロセスを取得できませんでした。";
     }
 </script>
 </body>
