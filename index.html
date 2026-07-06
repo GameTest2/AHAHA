@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenRouter Model Explorer Pro</title>
+    <title>OpenRouter Model Explorer Ultra</title>
     <!-- Puter.js v2 SDK -->
-    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://puter.com"></script>
     <style>
         /* ==========================================================================
-           PART 1: コアデザインシステム & 共通スタイル
+           PART 1: 超大型・長文生成に特化したデザインシステム
            ========================================================================== */
         :root {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --border: #e2e8f0;
-            --radius: 8px;
-            --danger: #ef4444;
+            --bg-color: #0f172a; /* 長文を読んでも目が疲れないダークテーマ */
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --border: #334155;
+            --radius: 12px;
+            --danger: #f43f5e;
+            --success: #10b981;
         }
 
         * {
@@ -32,67 +33,71 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            line-height: 1.5;
-            padding: 40px 20px;
+            line-height: 1.6;
+            padding: 30px 20px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: var(--card-bg);
-            padding: 30px;
+            padding: 35px;
             border-radius: var(--radius);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
         }
 
         h1 {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 26px;
+            font-weight: 800;
             margin-bottom: 24px;
-            color: var(--primary);
+            color: #fff;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            letter-spacing: -0.025em;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         label {
             display: block;
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-main);
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .select-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
         input[type="text"], select, textarea {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: 1px solid var(--border);
             border-radius: var(--radius);
             font-size: 15px;
             color: var(--text-main);
-            background-color: #fff;
-            transition: all 0.2s ease;
+            background-color: #0f172a;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         input[type="text"]:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
         }
 
         textarea {
             resize: vertical;
-            min-height: 120px;
+            min-height: 140px;
             font-family: inherit;
         }
 
@@ -100,42 +105,51 @@
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 14px 28px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             border-radius: var(--radius);
             cursor: pointer;
             width: 100%;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
         }
 
         .btn:hover {
             background-color: var(--primary-hover);
+            transform: translateY(-1px);
         }
 
         .btn:disabled {
-            background-color: var(--text-muted);
+            background-color: #334155;
+            color: var(--text-muted);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .loading {
             display: none;
             text-align: center;
-            margin-top: 15px;
-            font-size: 14px;
+            margin-top: 20px;
+            font-size: 15px;
             color: var(--primary);
-            font-weight: 500;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 12px;
+            border-radius: var(--radius);
+            border: 1px dashed rgba(99, 102, 241, 0.3);
         }
 
         .loading-spinner {
             display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(79, 70, 229, 0.3);
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(99, 102, 241, 0.2);
             border-radius: 50%;
             border-top-color: var(--primary);
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
             vertical-align: middle;
         }
 
@@ -143,62 +157,97 @@
             to { transform: rotate(360deg); }
         }
 
+        /* 長文でも快適にスクロール・閲覧できるレスポンスエリア */
         .response-box {
             margin-top: 25px;
-            padding: 20px;
+            padding: 24px;
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            background-color: #fafafa;
-            min-height: 150px;
+            background-color: #0f172a;
+            min-height: 250px;
+            max-height: 800px;
+            overflow-y: auto;
             white-space: pre-wrap;
-            font-size: 15px;
+            font-size: 16px;
+            line-height: 1.7;
+            letter-spacing: 0.03em;
         }
 
         .response-title {
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-muted);
+            margin-top: 30px;
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge-long {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🤖 OpenRouter Model Explorer Pro</h1>
+    <h1>🚀 OpenRouter Model Explorer Ultra</h1>
 
     <div class="form-group">
-        <label for="model-search">モデルを検索 / 選択</label>
+        <label for="model-search">モデル検索 / 選択 (超大型・長文対応)</label>
         <div class="select-container">
-            <input type="text" id="model-search" placeholder="モデル名を入力して絞り込み...">
+            <input type="text" id="model-search" placeholder="例: gpt-5, claude, deepseek...">
             <select id="model-select">
-                <!-- PART 2 & PART 3 によって動的に挿入されます -->
+                <!-- PART 2 & 3 により動的挿入 -->
             </select>
         </div>
     </div>
 
     <div class="form-group">
-        <label for="prompt">プロンプト</label>
-        <textarea id="prompt" placeholder="AIへの指示を入力してください...">ソーラーパネルが発電する仕組みを、中学生にもわかるように3つのステップで簡潔に説明してください。</textarea>
+        <label for="prompt">プロンプト指示</label>
+        <textarea id="prompt" placeholder="AIへの詳細な指示を入力してください...">量子コンピュータの仕組み、従来のコンピュータとの絶対的な違い、そして未来の社会に与える影響について、技術的な妥協をせず、限界まで詳細に、論文レベルの圧倒的な長文で網羅的に解説してください。</textarea>
     </div>
 
-    <button id="generate" class="btn">生成する</button>
+    <button id="generate" class="btn" disabled>Puter SDKの初期化中...</button>
 
     <div id="loading" class="loading">
-        <span class="loading-spinner"></span>思考中・レスポンスを生成しています...
+        <span class="loading-spinner"></span>超大型モデルが推論を組み立てています。長文生成のため、しばらくお待ちください...
     </div>
 
     <div>
-        <div class="response-title">Response</div>
+        <div class="response-title">
+            <span>AI Response Output</span>
+            <span class="badge-long">Max Context Enabled</span>
+        </div>
         <div id="response" class="response-box">ここにAIの返答が表示されます。</div>
     </div>
 </div>
 
 <script>
+    // SDKの初期化とボタン有効化の基本イベント
+    window.addEventListener('DOMContentLoaded', () => {
+        const checkPuter = setInterval(() => {
+            if (typeof puter !== 'undefined') {
+                clearInterval(checkPuter);
+                const btn = document.getElementById('generate');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '限界突破モードで生成する';
+                }
+            }
+        }, 100);
+    });
+
     /* ==========================================================================
-       PART 1: 骨格定義 終了
+       PART 1: 骨格・UIレイアウトの定義 終了
        ========================================================================== */
     /* ==========================================================================
        PART 2: モデルデータ定義（190種類以上の対応モデルリスト）
@@ -338,29 +387,44 @@
     // 初期化時にすべてのモデルを読み込み
     renderModels();
     /* ==========================================================================
-       PART 4: API連携・ローディング・生成処理（Puter.js制御ロジック）
+       PART 4: API連携・ローディング・生成処理（長文限界突破版）
        ========================================================================== */
-    // 生成ボタンのクリックイベントを監視
-    generateBtn.addEventListener('click', async () => {
+    
+    // 生成ボタンのメイン実行関数
+    async function executeGeneration() {
         const selectedModel = modelSelect.value;
-        const prompt = promptInput.value.trim();
+        const originalPrompt = promptInput.value.trim();
 
-        // 必須入力チェック
-        if (!prompt || !selectedModel || modelSelect.options[0]?.disabled) {
+        // 必須入力・バリデーションチェック
+        if (!originalPrompt || !selectedModel || modelSelect.options[0]?.disabled) {
             alert('有効なモデルを選択し、プロンプトを入力してください。');
             return;
         }
 
-        // 状態の初期化とローディングの表示
+        if (typeof puter === 'undefined') {
+            alert('Puter SDKの初期化が完了していません。一瞬待ってから再度お試しください。');
+            return;
+        }
+
+        // 💡 超大型モデル（GPT-5.4-pro等）が要約・省略して逃げるのを防ぐためのシステム指示を自動インジェクション
+        const finalPrompt = `${originalPrompt}\n\n[システム要求: このリクエストに対し、あなたの出力可能な最大トークン制限（Max Output Tokens）の限界まで使用して、一切省略せずに圧倒的に詳しく長文で記述してください。全体の構成、詳細なメカニズム、具体例、例外や例外への対策、今後の展望まですべて網羅し、途中で文を打ち切らずに最後まで書ききってください。]`;
+
+        // 画面状態の初期化とローディングの表示
         responseDiv.innerHTML = '';
         loadingDiv.style.display = 'block';
         generateBtn.disabled = true;
 
         try {
             // Puter.js v2 SDKを使用したテキスト生成リクエスト
-            const response = await puter.ai.chat(prompt, { model: selectedModel });
+            const response = await puter.ai.chat(finalPrompt, { 
+                model: selectedModel,
+                // 💡 明示的に巨大な出力をリクエストしてPuter内部のデフォルト制限キャップを上書き
+                max_tokens: 8192,
+                // 表現の多様性を広げて文脈のループや途中停止を防ぐ
+                temperature: 0.8
+            });
             
-            // 正常に取得できたレスポンスをグローバルイベントまたはPART 5へ引き渡す
+            // 正常に取得できたレスポンスをPART 5へ引き渡す
             if (typeof handleResponseSuccess === 'function') {
                 handleResponseSuccess(response);
             } else {
@@ -374,21 +438,37 @@
                 responseDiv.innerHTML = `<span style="color: var(--danger);">エラーが発生しました: ${error.message}</span>`;
             }
         } finally {
-            // 処理完了後にローディングを非表示に戻す
+            // 処理完了後にローディング状態を解除
             loadingDiv.style.display = 'none';
             generateBtn.disabled = false;
         }
-    });
+    }
+
+    // Puterオブジェクトがグローバルに生成されるのを監視する安全ガード（初期化検知）
+    const initGuard = setInterval(() => {
+        if (typeof puter !== 'undefined') {
+            clearInterval(initGuard); // 読み込み完了したら監視を停止
+            
+            // ボタンのロックを解除してイベントリスナーを結合
+            generateBtn.disabled = false;
+            generateBtn.textContent = '限界突破モードで生成する';
+            generateBtn.addEventListener('click', executeGeneration);
+            console.log("Puter SDK successfully initialized with Long-Context support!");
+        }
+    }, 100);
     /* ==========================================================================
        PART 5: レスポンス表示エリア・エラーハンドリング ＆ HTML完了
        ========================================================================== */
     /**
      * テキスト生成が成功した時の画面表示処理
-     * @param {string} text - AIからの返答テキスト
+     * @param {string} text - AIからの長文返答テキスト
      */
     function handleResponseSuccess(text) {
-        // 安全にテキストを挿入（エスケープ不要なプレーンテキストとして扱うためtextContentを使用）
+        // 安全にテキストを挿入（長文スクロール時もレイアウトを崩さないためtextContentを使用）
         responseDiv.textContent = text;
+        
+        // 生成完了後に自動で出力エリアの最上部へスクロールし、読みやすくします
+        responseDiv.scrollTop = 0;
     }
 
     /**
@@ -396,15 +476,15 @@
      * @param {Error} error - エラーオブジェクト
      */
     function handleResponseError(error) {
-        // 開発者ツール確認用
+        // 開発者ツール（コンソール）確認用
         console.error("Puter AI API Error:", error);
         
-        // ユーザー向けのエラー表示を生成
+        // ユーザー向けの詳細なエラー表示を生成
         responseDiv.innerHTML = `
-            <div style="color: var(--danger); font-weight: 600; display: flex; flex-direction: column; gap: 4px;">
-                <span>⚠️ エラーが発生しました</span>
-                <span style="font-size: 13px; font-weight: normal; background: rgba(239, 68, 68, 0.05); padding: 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    ${error.message || '不明なエラーが発生しました。'}
+            <div style="color: var(--danger); font-weight: 600; display: flex; flex-direction: column; gap: 8px;">
+                <span style="display: flex; align-items: center; gap: 6px;">⚠️ 生成中にエラーが発生しました</span>
+                <span style="font-size: 13.5px; font-weight: normal; line-height: 1.6; background: rgba(244, 63, 94, 0.08); padding: 12px; border-radius: 6px; border: 1px solid rgba(244, 63, 94, 0.2); white-space: pre-wrap;">
+                    ${error.message || '不明な通信エラー、またはモデルのアクセス制限が発生しました。時間をおいて再度お試しください。'}
                 </span>
             </div>
         `;
